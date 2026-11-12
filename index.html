@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Auburn Gemba Walks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-column ops sheet. Latest-walk zone cards, then trend, then log form + walk history side by side on wide screens. */
+:root {
+  --bg: #f2f4f5;
+  --surface: #ffffff;
+  --ink: #16212b;
+  --muted: #5a6772;
+  --line: #d8dee2;
+  --accent: #0f6a6d;
+  --accent-ink: #ffffff;
+  --good: #1b7643;
+  --good-bg: #e2f2e8;
+  --bad: #b3332a;
+  --bad-bg: #fbe6e3;
+  --flat-bg: #eaeef0;
+  --z1: #2c6cad;
+  --z2: #c2650f;
+  --z3: #7a4fb3;
+  --z4: #23857a;
+  --z5: #a3386a;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161a; --surface: #182027; --ink: #e5eaed; --muted: #9ba7b0; --line: #2a343c;
+    --accent: #52b4b6; --accent-ink: #0a1416;
+    --good: #5fc98c; --good-bg: #15301f; --bad: #f07b6f; --bad-bg: #3a1916; --flat-bg: #222b32;
+    --z1: #70a9e6; --z2: #eb9b4c; --z3: #b393e6; --z4: #5fc3b6; --z5: #e07ca9;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161a; --surface: #182027; --ink: #e5eaed; --muted: #9ba7b0; --line: #2a343c;
+  --accent: #52b4b6; --accent-ink: #0a1416;
+  --good: #5fc98c; --good-bg: #15301f; --bad: #f07b6f; --bad-bg: #3a1916; --flat-bg: #222b32;
+  --z1: #70a9e6; --z2: #eb9b4c; --z3: #b393e6; --z4: #5fc3b6; --z5: #e07ca9;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 28px;
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+.sync { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+.sync::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.sync[data-state="live"]::before { background: var(--good); }
+.sync[data-state="warn"]::before { background: var(--bad); }
+
+/* Section headings */
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 12px; }
+h2 { font-size: 17px; font-weight: 600; }
+.sec-sub { color: var(--muted); font-size: 13px; }
+
+/* Zone cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.card-h { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--zc, var(--ink)); flex: none; }
+.card h3 { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sla { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.big { display: flex; align-items: baseline; gap: 8px; }
+.big .num { font-size: 40px; font-weight: 600; line-height: 1; }
+.big .unit { color: var(--muted); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: var(--flat-bg); color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip.good { background: var(--good-bg); color: var(--good); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.spark { width: 100%; height: 34px; display: block; }
+.card.total { background: transparent; border-style: dashed; }
+
+/* Chart */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+#chart svg { width: 100%; height: auto; display: block; margin-top: 8px; }
+#chart .grid { stroke: var(--line); stroke-width: 1; }
+#chart .tick { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+#chart .endlabel { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+
+/* Log + history */
+.split { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 820px) { .split { grid-template-columns: minmax(0, 1fr); } }
+form { display: grid; gap: 12px; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; }
+.lbl-row { display: flex; justify-content: space-between; gap: 8px; }
+.lbl-row .hint { color: var(--muted); font-weight: 400; font-family: var(--mono); font-size: 11px; }
+input, textarea {
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  width: 100%;
+  min-width: 0;
+}
+input[type="number"] { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+textarea { resize: vertical; min-height: 64px; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn {
+  font: inherit; font-weight: 600; font-size: 14px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  border-radius: 6px; padding: 9px 14px; cursor: pointer;
+}
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.link {
+  font: inherit; font-size: 13px; background: none; border: 0; padding: 2px 4px;
+  color: var(--accent); cursor: pointer; border-radius: 4px;
+}
+.link.danger { color: var(--bad); }
+.link[data-confirm="1"] { background: var(--bad-bg); font-weight: 600; }
+.form-msg { font-size: 13px; color: var(--muted); min-height: 1.2em; margin: 0; }
+.form-msg.err { color: var(--bad); }
+.readonly { font-size: 13px; color: var(--muted); margin: 0; }
+
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.date { white-space: nowrap; font-weight: 500; }
+td.note { color: var(--muted); min-width: 160px; max-width: 280px; }
+td.by { color: var(--muted); white-space: nowrap; font-size: 13px; }
+td.act { white-space: nowrap; text-align: right; }
+tr.editing td { background: var(--flat-bg); }
+.lock { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+.lock svg { width: 12px; height: 12px; }
+.today-box { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.today-lbl { font-size: 13px; font-weight: 500; }
+.today-val { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+.today-hint { font-size: 12px; color: var(--muted); }
+.d-good { color: var(--good); }
+.d-bad { color: var(--bad); }
+.empty { color: var(--muted); margin: 8px 0; }
+
+/* Zones */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+.zone-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 6px; }
+.zone-list li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.zone-list .sla { margin-left: 0; }
+.zone-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.zone-add label { flex: 1 1 180px; }
+.zone-add label.sm { flex: 0 1 120px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card, .panel { transition: border-color .2s; }
+}
+
+/* Inputs at 16px so phones don't zoom in on focus. */
+input, textarea { font-size: 16px; }
+
+/* Walk history as stacked cards (phones); the table is for wider screens. */
+.wlist { display: none; }
+.wcard { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.wcard:first-child { padding-top: 0; }
+.wcard:last-child { border-bottom: 0; }
+.wcard.editing { background: var(--flat-bg); margin-inline: -12px; padding: 12px; border-radius: 8px; }
+.wc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.wc-date { font-weight: 600; font-size: 15px; }
+.wc-date span { color: var(--muted); font-weight: 400; }
+.wc-total { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.wc-total strong { color: var(--ink); font-size: 17px; }
+.wc-zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 6px; }
+.wc-z { background: var(--bg); border-radius: 6px; padding: 6px 8px; display: grid; gap: 1px; min-width: 0; }
+.wc-z .zl { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wc-z .zv { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 17px; }
+.wc-note { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.wc-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); min-height: 32px; }
+
+/* Tablet and phone: form moves up right after the latest counts, since walks are logged on the floor. */
+@media (max-width: 820px) {
+  .split { display: contents; }
+  .top { order: 0; }
+  #latest-sec { order: 1; }
+  #log-sec { order: 2; }
+  #trend-sec { order: 3; }
+  #hist-sec { order: 4; }
+  #zones-panel { order: 5; }
+}
+
+/* Phone */
+@media (max-width: 600px) {
+  .wrap { padding-block: 16px 40px; gap: 20px; }
+  h1 { font-size: 24px; }
+  .lede { font-size: 14px; }
+  .sync { width: 100%; }
+  .sec-head { margin-bottom: 10px; }
+  .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card { padding: 12px; gap: 6px; }
+  .card.total { grid-column: 1 / -1; order: -1; }
+  .big { flex-wrap: wrap; gap: 2px 8px; }
+  .big .num { font-size: 32px; }
+  .big .unit { font-size: 12px; }
+  .chip { font-size: 11px; }
+  .panel { padding: 14px 12px; }
+  #zone-fields { grid-template-columns: 1fr 1fr; gap: 10px !important; }
+  .lbl-extra { display: none; }
+  input[type="number"] { min-height: 46px; font-size: 20px; }
+  .btn { padding: 12px 16px; font-size: 15px; min-height: 46px; }
+  #save-btn { flex: 1 1 auto; }
+  .link { padding: 8px 8px; font-size: 14px; }
+  #history table { display: none; }
+  .wlist { display: grid; }
+  .zone-add label, .zone-add label.sm { flex: 1 1 100%; }
+  .zone-add .btn { width: 100%; }
+}
+
+/* Standalone page basics (no artifact skeleton here). */
+html, body { margin: 0; min-height: 100%; }
+[hidden] { display: none !important; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+img { max-width: 100%; }
+
+/* Password gate */
+.gate { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding-block: 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.gate-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 14px; }
+.gate-card h1 { font-size: 26px; }
+.gate-card .lede { margin: 0; }
+.gate-card .btn { width: 100%; min-height: 46px; }
+.top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <form class="gate-card" id="gate-form" novalidate>
+    <div class="eyebrow">Auburn hub · Gemba walk log</div>
+    <h1>Auburn Gemba Walks</h1>
+    <p class="lede" id="gate-lede">Enter the team password to view and log walks.</p>
+    <label for="gate-pw">Password
+      <input type="password" id="gate-pw" autocomplete="current-password" autocapitalize="off" spellcheck="false">
+    </label>
+    <button class="btn" id="gate-btn" type="submit">Unlock</button>
+    <p class="form-msg" id="gate-msg" role="status"></p>
+  </form>
+</div>
+
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div>
+      <div class="eyebrow">Auburn hub · Gemba walk log</div>
+      <h1>Auburn Gemba Walks</h1>
+      <p class="lede">Cars sitting past SLA in each zone, counted on every walk. The goal for every zone is zero.</p>
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync" data-state="idle">Loading walk log…</span>
+      <span>
+        <button class="link" id="refresh-btn" type="button">Refresh</button>
+        <button class="link" id="lock-btn" type="button">Lock</button>
+      </span>
+    </div>
+  </header>
+
+  <section id="latest-sec" aria-labelledby="latest-h">
+    <div class="sec-head">
+      <h2 id="latest-h">Latest walk</h2>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="sec-sub" id="latest-sub"></span>
+        <button class="link" id="copy-recap" type="button" hidden>Copy recap</button>
+      </div>
+    </div>
+    <div class="cards" id="cards">
+      <p class="empty">Walks will appear here once the log loads.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="trend-sec" aria-labelledby="trend-h">
+    <div class="sec-head" style="margin-bottom:4px">
+      <h2 id="trend-h">Trend by zone</h2>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div id="chart"><p class="empty">The trend appears after the first walk is logged.</p></div>
+  </section>
+
+  <div class="split">
+    <section class="panel" id="log-sec" aria-labelledby="log-h">
+      <div class="sec-head"><h2 id="log-h">Log a walk</h2></div>
+      <form id="walk-form" novalidate>
+        <div class="today-box">
+          <span class="today-lbl">Walk date</span>
+          <span class="today-val" id="walk-date-label">Today</span>
+          <span class="today-hint">Today's walk can be edited until midnight Pacific. After that it locks.</span>
+        </div>
+        <div id="zone-fields" style="display:grid;gap:12px"></div>
+        <label for="walk-note">Notes <span style="color:var(--muted);font-weight:400">(optional)</span>
+          <textarea id="walk-note" placeholder="What's holding the oldest cars? Blockers, owners, follow-ups."></textarea>
+        </label>
+        <label for="walk-by">Your name <span style="color:var(--muted);font-weight:400">(optional, remembered on this device)</span>
+          <input type="text" id="walk-by" maxlength="60" autocomplete="name">
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="save-btn" type="submit">Save today's walk</button>
+          <button class="btn ghost" id="clear-btn" type="button">Clear</button>
+        </div>
+        <p class="form-msg" id="form-msg" role="status"></p>
+      </form>
+    </section>
+
+    <section class="panel" id="hist-sec" aria-labelledby="hist-h">
+      <div class="sec-head">
+        <h2 id="hist-h">Walk history</h2>
+        <span class="sec-sub" id="hist-sub"></span>
+      </div>
+      <div class="table-scroll" id="history"><p class="empty">No walks logged yet.</p></div>
+    </section>
+  </div>
+
+  <details id="zones-panel">
+    <summary>Zones and SLAs</summary>
+    <ul class="zone-list" id="zone-list"></ul>
+    <p class="readonly">To add or rename a zone, edit the Zones tab in the Google Sheet. The page picks it up on the next refresh.</p>
+  </details>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  const API = String(window.GEMBA_API_URL || "").trim();
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const parts = (iso) => iso.split("-").map(Number);
+  const shortDate = (iso) => { const [, m, d] = parts(iso); return MONTHS[m - 1] + " " + d; };
+  const longDate = (iso) => { const [y, m, d] = parts(iso); return MONTHS[m - 1] + " " + d + ", " + y; };
+  const slashDate = (iso) => { const [y, m, d] = parts(iso); return m + "/" + d + "/" + String(y).slice(2); };
+  // Auburn is a WA hub: a walk's "day" runs midnight to midnight Pacific. The backend enforces the same rule.
+  const PT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" });
+  const todayISO = () => PT.format(new Date());
+  const isToday = (iso) => iso === todayISO();
+  const LOCK_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" style="fill:none;stroke:currentColor;stroke-width:1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" style="fill:none;stroke:currentColor;stroke-width:1.5"/></svg>';
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const zoneColor = (i) => "var(--z" + ((i % 5) + 1) + ")";
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (_) {} }
+  };
+  const PW_KEY = "auburn_gemba_pw", NAME_KEY = "auburn_gemba_name";
+
+  const S = { pw: null, zones: [], walks: [], loaded: false, zoneSig: "", editingDate: null, formDate: null, busy: false };
+
+  const sortedZones = () => S.zones.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name));
+  const sortedWalks = () => S.walks.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const walkTotal = (w, zones) => {
+    let t = 0, any = false;
+    zones.forEach((z) => { const v = w.counts?.[z.id]; if (isNum(v)) { t += v; any = true; } });
+    return any ? t : null;
+  };
+  // Walk-to-walk change uses only zones counted on both walks, so a newly added zone doesn't read as an increase.
+  function commonTotals(a, b, zones) {
+    const both = zones.filter((z) => isNum(a.counts?.[z.id]) && isNum(b.counts?.[z.id]));
+    const inA = zones.filter((z) => isNum(a.counts?.[z.id])).length;
+    const inB = zones.filter((z) => isNum(b.counts?.[z.id])).length;
+    if (!both.length) return { t: null, pt: null, partial: false };
+    return { t: walkTotal(a, both), pt: walkTotal(b, both), partial: both.length < Math.max(inA, inB) };
+  }
+  function setSync(state, text) { const el = $("#sync"); el.dataset.state = state; el.textContent = text; }
+
+  /* ---------- Backend ---------- */
+  async function api(action, extra) {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // plain text avoids a CORS preflight Apps Script can't answer
+      body: JSON.stringify(Object.assign({ action, pw: S.pw }, extra || {})),
+      redirect: "follow"
+    });
+    if (!res.ok) throw { code: "http_" + res.status };
+    let data;
+    try { data = await res.json(); } catch (_) { throw { code: "bad_response" }; }
+    if (!data.ok) throw { code: data.error || "error" };
+    return data;
+  }
+  function apply(data) {
+    S.zones = data.zones || [];
+    S.walks = data.walks || [];
+    S.loaded = true;
+    renderAll();
+    if (S.editingDate === null || S.formDate !== todayISO()) fillForm(todayISO(), true);
+    else $("#save-btn").textContent = findWalk(S.formDate) ? "Update today's walk" : "Save today's walk";
+    const t = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    setSync("live", "Synced " + t);
+  }
+  async function refresh(quiet) {
+    if (!S.pw || S.busy) return;
+    if (!quiet) setSync("idle", "Refreshing…");
+    try { apply(await api("list")); }
+    catch (e) {
+      if (e.code === "wrong_password") return lock("The password changed. Enter the new one.");
+      setSync("warn", "Couldn't reach the walk log. Showing the last copy.");
+    }
+  }
+
+  /* ---------- Password gate ---------- */
+  function showGate(message, isErr) {
+    $("#app").hidden = true; $("#gate").hidden = false;
+    const m = $("#gate-msg"); m.textContent = message || ""; m.classList.toggle("err", !!isErr);
+    setTimeout(() => { try { $("#gate-pw").focus(); } catch (_) {} }, 0);
+  }
+  function showApp() { $("#gate").hidden = true; $("#app").hidden = false; }
+  function lock(message) {
+    S.pw = null; store.del(PW_KEY);
+    S.walks = []; S.zones = []; S.loaded = false; S.zoneSig = "";
+    $("#gate-pw").value = "";
+    showGate(message || "Locked. Enter the password to open the walk log again.", !!message);
+  }
+  async function unlock(pw, silent) {
+    S.pw = pw;
+    const btn = $("#gate-btn"); btn.disabled = true; btn.textContent = "Checking…";
+    try {
+      const data = await api("list");
+      store.set(PW_KEY, pw);
+      showApp(); apply(data);
+    } catch (e) {
+      S.pw = null;
+      if (e.code === "wrong_password") { store.del(PW_KEY); showGate(silent ? "" : "That password didn't work. Check it with your lead and try again.", !silent); }
+      else if (e.code === "not_configured") showGate("The walk log's password hasn't been set up yet. Ask the tracker owner.", true);
+      else showGate("Couldn't reach the walk log. Check your connection and try again.", true);
+    } finally { btn.disabled = false; btn.textContent = "Unlock"; }
+  }
+  $("#gate-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const pw = $("#gate-pw").value;
+    if (!pw) { showGate("Enter the password.", true); return; }
+    unlock(pw, false);
+  });
+  $("#lock-btn").addEventListener("click", () => lock());
+  $("#refresh-btn").addEventListener("click", () => refresh(false));
+
+  /* ---------- Latest walk cards ---------- */
+  function deltaChip(v, prev, prevDate) {
+    if (!isNum(v)) return "";
+    if (!isNum(prev)) return '<span class="chip">First count</span>';
+    const d = v - prev;
+    if (d < 0) return '<span class="chip good">▼ ' + Math.abs(d) + " vs " + shortDate(prevDate) + "</span>";
+    if (d > 0) return '<span class="chip bad">▲ ' + d + " vs " + shortDate(prevDate) + "</span>";
+    return '<span class="chip">No change vs ' + shortDate(prevDate) + "</span>";
+  }
+  function spark(values, color) {
+    const pts = values.map((v, i) => [i, v]).filter((p) => isNum(p[1]));
+    if (pts.length < 2) return "";
+    const W = 200, H = 34, P = 4;
+    const max = Math.max(1, ...pts.map((p) => p[1]));
+    const n = values.length - 1;
+    const x = (i) => P + (i * (W - 2 * P)) / n;
+    const y = (v) => P + (H - 2 * P) * (1 - v / max);
+    const line = pts.map((p) => x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join(" ");
+    const last = pts[pts.length - 1];
+    return '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polyline points="' + line + '" style="fill:none;stroke:' + color + ';stroke-width:2;stroke-linejoin:round;stroke-linecap:round" vector-effect="non-scaling-stroke"/>' +
+      '<circle cx="' + x(last[0]) + '" cy="' + y(last[1]) + '" r="3" style="fill:' + color + '"/></svg>';
+  }
+  function renderCards() {
+    const zones = sortedZones(), walks = sortedWalks();
+    const box = $("#cards");
+    if (!S.loaded) return;
+    if (!walks.length) {
+      box.innerHTML = '<p class="empty">No walks logged yet. Use <strong>Log a walk</strong> to add the first one.</p>';
+      $("#latest-sub").textContent = ""; $("#copy-recap").hidden = true;
+      return;
+    }
+    const L = walks[walks.length - 1], P = walks.length > 1 ? walks[walks.length - 2] : null;
+    $("#latest-sub").textContent = longDate(L.date) + (P ? " · compared with " + longDate(P.date) : "");
+    $("#copy-recap").hidden = false;
+    let html = "";
+    zones.forEach((z, i) => {
+      const v = L.counts?.[z.id], pv = P?.counts?.[z.id];
+      const color = zoneColor(i);
+      html += '<article class="card" style="--zc:' + color + '">' +
+        '<div class="card-h"><span class="swatch"></span><h3>' + esc(z.name) + "</h3></div>" +
+        '<div class="big"><span class="num">' + (isNum(v) ? v : "—") + '</span><span class="unit">' + (isNum(v) ? (v === 1 ? "car" : "cars") + " past " + esc(z.sla_hours) + " hr SLA" : "not counted") + "</span></div>" +
+        '<div class="chips">' + deltaChip(v, pv, P?.date) + (v === 0 ? '<span class="chip good">Clear</span>' : "") + "</div>" +
+        spark(walks.map((w) => w.counts?.[z.id]), color) +
+        "</article>";
+    });
+    const t = walkTotal(L, zones);
+    const c = P ? commonTotals(L, P, zones) : { t: null, pt: null, partial: false };
+    html += '<article class="card total"><div class="card-h"><h3>All zones</h3></div>' +
+      '<div class="big"><span class="num">' + (t ?? "—") + '</span><span class="unit">cars past SLA</span></div>' +
+      '<div class="chips">' + (P && !isNum(c.pt) ? '<span class="chip">No shared zones to compare</span>' : deltaChip(c.t, c.pt, P?.date)) +
+      (isNum(c.t) && isNum(c.pt) && c.pt > 0 ? '<span class="chip">' + Math.round(((c.t - c.pt) / c.pt) * 100) + "%</span>" : "") +
+      (c.partial ? '<span class="chip" title="Zones not counted on both walks are left out of the change">Same zones only</span>' : "") + "</div>" +
+      spark(walks.map((w) => walkTotal(w, zones)), "var(--ink)") + "</article>";
+    box.innerHTML = html;
+  }
+
+  /* ---------- Trend chart ---------- */
+  function niceStep(max) {
+    const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+  }
+  function renderChart() {
+    const zones = sortedZones(), walks = sortedWalks();
+    $("#legend").innerHTML = zones.map((z, i) => '<span><span class="swatch" style="--zc:' + zoneColor(i) + '"></span>' + esc(z.name) + "</span>").join("");
+    const box = $("#chart");
+    if (!walks.length) { box.innerHTML = '<p class="empty">The trend appears after the first walk is logged.</p>'; return; }
+    // Draw at the container's real width so labels stay readable on phones.
+    const W = Math.max(280, Math.round(box.clientWidth || 680));
+    const narrow = W < 520;
+    const H = narrow ? 210 : 250, Lp = narrow ? 28 : 36, Rp = narrow ? 34 : 44, Tp = 14, Bp = 30;
+    let max = 0;
+    walks.forEach((w) => zones.forEach((z) => { const v = w.counts?.[z.id]; if (isNum(v) && v > max) max = v; }));
+    const step = niceStep(Math.max(max, 4));
+    const yMax = Math.max(step, Math.ceil(max / step) * step);
+    const x = (i) => walks.length === 1 ? Lp + (W - Lp - Rp) / 2 : Lp + (i * (W - Lp - Rp)) / (walks.length - 1);
+    const y = (v) => Tp + (H - Tp - Bp) * (1 - v / yMax);
+    let s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Cars past SLA by zone across walks">';
+    for (let v = 0; v <= yMax + 1e-9; v += step) {
+      s += '<line class="grid" x1="' + Lp + '" x2="' + (W - Rp) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
+        '<text class="tick" x="' + (Lp - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + "</text>";
+    }
+    const every = Math.ceil(walks.length / (narrow ? 4 : 8));
+    walks.forEach((w, i) => {
+      if (i % every === 0 || i === walks.length - 1) s += '<text class="tick" x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + shortDate(w.date) + "</text>";
+    });
+    const ends = [];
+    zones.forEach((z, zi) => {
+      const pts = walks.map((w, i) => [i, w.counts?.[z.id]]).filter((p) => isNum(p[1]));
+      if (!pts.length) return;
+      const col = zoneColor(zi);
+      if (pts.length > 1) s += '<polyline points="' + pts.map((p) => x(p[0]) + "," + y(p[1])).join(" ") + '" style="fill:none;stroke:' + col + ';stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>';
+      pts.forEach((p, k) => {
+        const last = k === pts.length - 1;
+        s += '<circle cx="' + x(p[0]) + '" cy="' + y(p[1]) + '" r="' + (last ? 5 : 3.5) + '" style="fill:' + (last ? col : "var(--surface)") + ";stroke:" + col + ';stroke-width:2"><title>' + esc(z.name) + " · " + shortDate(walks[p[0]].date) + ": " + p[1] + "</title></circle>";
+      });
+      const lp = pts[pts.length - 1];
+      ends.push({ x: x(lp[0]) + 10, y: y(lp[1]) + 4, v: lp[1], col });
+    });
+    // Stack end labels upward from the baseline so they never collide with each other or the date axis.
+    ends.sort((a, b) => b.y - a.y);
+    const floor = H - Bp + 4;
+    for (let i = 0; i < ends.length; i++) {
+      if (ends[i].y > floor) ends[i].y = floor;
+      if (i > 0 && ends[i - 1].y - ends[i].y < 14) ends[i].y = ends[i - 1].y - 14;
+    }
+    ends.forEach((e) => { s += '<text class="endlabel" x="' + e.x + '" y="' + e.y + '" style="fill:' + e.col + '">' + e.v + "</text>"; });
+    box.innerHTML = s + "</svg>";
+  }
+
+  /* ---------- History ---------- */
+  function renderHistory() {
+    const zones = sortedZones(), walks = sortedWalks();
+    const box = $("#history");
+    if (!S.loaded) return;
+    $("#hist-sub").textContent = walks.length ? walks.length + (walks.length === 1 ? " walk" : " walks") : "";
+    if (!walks.length) { box.innerHTML = '<p class="empty">No walks logged yet.</p>'; return; }
+    let h = "<table><thead><tr><th>Date</th>" + zones.map((z) => '<th class="n">' + esc(z.name.replace(/\s*zone$/i, "")) + "</th>").join("") +
+      '<th class="n">Total</th><th class="n">Change</th><th>Notes</th><th>Logged by</th><th></th></tr></thead><tbody>';
+    const desc = walks.slice().reverse();
+    let list = '<div class="wlist">';
+    desc.forEach((w, i) => {
+      const prev = desc[i + 1];
+      const t = walkTotal(w, zones);
+      const c = prev ? commonTotals(w, prev, zones) : null;
+      let ch = "—", cls = "";
+      if (c && isNum(c.t) && isNum(c.pt)) {
+        const d = c.t - c.pt; ch = d > 0 ? "+" + d : d < 0 ? "−" + Math.abs(d) : "0"; cls = d < 0 ? "d-good" : d > 0 ? "d-bad" : "";
+        if (c.partial) ch = '<span title="Compares only zones counted on both walks">' + ch + "*</span>";
+      }
+      const by = w.logged_by || "";
+      const act = isToday(w.date)
+        ? '<span><button class="link" type="button" data-act="edit">Edit</button><button class="link danger" type="button" data-act="del">Delete</button></span>'
+        : '<span class="lock" title="Walks lock after their day ends (Pacific time)">' + LOCK_SVG + "Locked</span>";
+      const editing = S.editingDate === w.date;
+      list += '<article class="wcard' + (editing ? " editing" : "") + '" data-date="' + esc(w.date) + '">' +
+        '<div class="wc-top"><span class="wc-date">' + esc(shortDate(w.date)) + "<span> ’" + w.date.slice(2, 4) + "</span></span>" +
+        '<span class="wc-total"><strong>' + (t ?? "—") + "</strong> total" + (ch !== "—" ? ' · <span class="' + cls + '">' + ch + "</span>" : "") + "</span></div>" +
+        '<div class="wc-zones">' + zones.map((z, zi) => { const v = w.counts?.[z.id];
+          return '<div class="wc-z"><span class="zl"><span class="swatch" style="--zc:' + zoneColor(zi) + '"></span>' + esc(z.name.replace(/\s*zone$/i, "")) + '</span><span class="zv">' + (isNum(v) ? v : "—") + "</span></div>"; }).join("") + "</div>" +
+        (w.note ? '<p class="wc-note">' + esc(w.note) + "</p>" : "") +
+        '<div class="wc-foot"><span>' + (by ? "Logged by " + esc(by) : "") + "</span>" + act + "</div>" +
+        "</article>";
+      h += '<tr data-date="' + esc(w.date) + '"' + (editing ? ' class="editing"' : "") + ">" +
+        '<td class="date">' + esc(shortDate(w.date)) + '<span style="color:var(--muted);font-weight:400"> ’' + w.date.slice(2, 4) + "</span></td>" +
+        zones.map((z) => { const v = w.counts?.[z.id]; return '<td class="n">' + (isNum(v) ? v : "—") + "</td>"; }).join("") +
+        '<td class="n"><strong>' + (t ?? "—") + '</strong></td><td class="n ' + cls + '">' + ch + "</td>" +
+        '<td class="note">' + (w.note ? esc(w.note) : "") + "</td>" +
+        '<td class="by">' + (by ? esc(by) : "—") + "</td>" +
+        '<td class="act">' + act + "</td></tr>";
+    });
+    box.innerHTML = h + "</tbody></table>" + list + "</div>";
+  }
+
+  /* ---------- Form ---------- */
+  function renderZoneFields() {
+    const zones = sortedZones();
+    const sig = zones.map((z) => z.id + ":" + z.name + ":" + z.sla_hours).join("|");
+    if (sig === S.zoneSig) return;
+    S.zoneSig = sig;
+    const box = $("#zone-fields");
+    const keep = {};
+    box.querySelectorAll("input").forEach((el) => { keep[el.id] = el.value; });
+    box.innerHTML = zones.length ? zones.map((z, i) =>
+      '<label for="count-' + esc(z.id) + '"><span class="lbl-row"><span><span class="swatch" style="display:inline-block;margin-right:6px;--zc:' + zoneColor(i) + '"></span>' + esc(z.name) + '<span class="lbl-extra"> cars past SLA</span></span><span class="hint">' + esc(z.sla_hours) + " hr</span></span>" +
+      '<input type="number" id="count-' + esc(z.id) + '" data-zone="' + esc(z.id) + '" min="0" step="1" inputmode="numeric" placeholder="0"></label>'
+    ).join("") : '<p class="empty">No zones yet. Add them in the Zones tab of the Google Sheet.</p>';
+    box.querySelectorAll("input").forEach((el) => { if (keep[el.id] != null) el.value = keep[el.id]; });
+    $("#zone-list").innerHTML = zones.map((z, i) => '<li><span class="swatch" style="--zc:' + zoneColor(i) + '"></span>' + esc(z.name) + ' <span class="sla">' + esc(z.sla_hours) + " hr SLA</span></li>").join("") ||
+      '<li class="empty">No zones yet.</li>';
+  }
+  function findWalk(date) { return S.walks.find((w) => w.date === date); }
+  function fillForm(date, force) {
+    const w = findWalk(date);
+    S.formDate = date;
+    $("#walk-date-label").textContent = longDate(date);
+    $("#save-btn").textContent = w ? "Update today's walk" : "Save today's walk";
+    if (w || force) {
+      document.querySelectorAll("#zone-fields input").forEach((el) => {
+        const v = w?.counts?.[el.dataset.zone];
+        el.value = isNum(v) ? v : "";
+      });
+      $("#walk-note").value = w?.note || "";
+    }
+    S.editingDate = w ? date : null;
+  }
+  function msg(text, err) { const el = $("#form-msg"); el.textContent = text; el.classList.toggle("err", !!err); }
+
+  $("#walk-by").value = store.get(NAME_KEY) || "";
+  $("#clear-btn").addEventListener("click", () => {
+    document.querySelectorAll("#zone-fields input").forEach((el) => { el.value = ""; });
+    $("#walk-note").value = ""; msg("");
+  });
+
+  const ERRORS = {
+    locked: "The day changed and that walk is now locked. The form now shows today's walk.",
+    bad_count: "Counts must be whole numbers, 0 or more.",
+    no_counts: "Enter a count for at least one zone. Use 0 for a clear zone."
+  };
+
+  $("#walk-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const date = todayISO();
+    if (S.formDate !== date) { fillForm(date, true); renderAll(); msg(ERRORS.locked, true); return; }
+    const counts = {};
+    let bad = false, any = false;
+    document.querySelectorAll("#zone-fields input").forEach((el) => {
+      const raw = el.value.trim();
+      if (raw === "") return;
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 0) bad = true; else { counts[el.dataset.zone] = n; any = true; }
+    });
+    if (bad) { msg(ERRORS.bad_count, true); return; }
+    if (!any) { msg(ERRORS.no_counts, true); return; }
+    const by = $("#walk-by").value.trim();
+    store.set(NAME_KEY, by);
+    const existing = findWalk(date);
+    const btn = $("#save-btn"); btn.disabled = true; S.busy = true;
+    msg("Saving…");
+    try {
+      const data = await api("save", { date, counts, note: $("#walk-note").value.trim(), by });
+      S.busy = false; apply(data);
+      fillForm(date, false);
+      msg((existing ? "Updated " : "Saved ") + longDate(date) + " walk. You can edit it until midnight Pacific.");
+    } catch (err) {
+      S.busy = false;
+      if (err.code === "wrong_password") return lock("The password changed. Enter the new one.");
+      if (err.code === "locked") { fillForm(todayISO(), true); refresh(true); }
+      msg(ERRORS[err.code] || "Couldn't save the walk. Check your connection and try again.", true);
+    } finally { btn.disabled = false; }
+  });
+
+  $("#history").addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-act]"); if (!b) return;
+    const date = b.closest("[data-date]").dataset.date;
+    if (!isToday(date)) { renderHistory(); msg("That walk is locked because its day has ended.", true); return; }
+    if (b.dataset.act === "edit") {
+      fillForm(date, true); renderHistory(); msg("Editing the " + longDate(date) + " walk.");
+      $("#log-sec").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      return;
+    }
+    if (b.dataset.confirm !== "1") {
+      b.dataset.confirm = "1"; b.textContent = "Confirm delete";
+      setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ""; b.textContent = "Delete"; } }, 4000);
+      return;
+    }
+    S.busy = true;
+    try {
+      const data = await api("delete", { date });
+      S.busy = false; S.editingDate = null; apply(data); fillForm(todayISO(), true);
+      msg("Deleted the " + longDate(date) + " walk.");
+    } catch (err) {
+      S.busy = false;
+      if (err.code === "wrong_password") return lock("The password changed. Enter the new one.");
+      msg(err.code === "locked" ? "That walk is locked because its day has ended." : "Couldn't delete that walk. Try again.", true);
+    }
+  });
+
+  $("#copy-recap").addEventListener("click", async () => {
+    const walks = sortedWalks(); if (!walks.length) return;
+    const L = walks[walks.length - 1];
+    const lines = ["Auburn Gemba - " + slashDate(L.date) + ":", ""];
+    sortedZones().forEach((z) => { const v = L.counts?.[z.id]; if (isNum(v)) lines.push("* " + z.name + ": " + v + " " + (v === 1 ? "car" : "cars") + " beyond " + z.sla_hours + " hr SLA"); });
+    if (L.note) lines.push("", L.note);
+    const text = lines.join("\n");
+    const btn = $("#copy-recap");
+    try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+    catch (err) {
+      const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch (_) {}
+      ta.remove(); btn.textContent = ok ? "Copied" : "Copy failed";
+    }
+    setTimeout(() => { btn.textContent = "Copy recap"; }, 2000);
+  });
+
+  function renderAll() {
+    renderZoneFields();
+    renderCards();
+    renderChart();
+    renderHistory();
+  }
+
+  /* ---------- Boot ---------- */
+  let chartW = 0;
+  if (window.ResizeObserver) new ResizeObserver(() => {
+    const w = $("#chart").clientWidth;
+    if (w && Math.abs(w - chartW) > 4) { chartW = w; if (S.loaded) renderChart(); }
+  }).observe($("#chart"));
+
+  // Pick up other people's walks every minute while the page is open, and roll over at midnight Pacific.
+  setInterval(() => {
+    if (!S.pw) return;
+    if (S.formDate && S.formDate !== todayISO()) { fillForm(todayISO(), true); renderAll(); msg("A new day started. Yesterday's walk is now locked."); }
+    if (document.visibilityState === "visible") refresh(true);
+  }, 60000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(true); });
+
+  fillForm(todayISO(), false);
+  if (!API) {
+    $("#gate-pw").disabled = true; $("#gate-btn").disabled = true;
+    showGate("The walk log isn't connected yet. The tracker owner still needs to finish the Google Sheet setup.", true);
+  } else {
+    const saved = store.get(PW_KEY);
+    if (saved) { $("#gate-msg").textContent = "Opening the walk log…"; unlock(saved, true); }
+    else showGate("");
+  }
+})();
+</script>
+
+</body>
+</html>
